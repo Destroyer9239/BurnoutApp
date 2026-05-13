@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-keybindings.json",
+  "bindings": [
+    { "key": "ctrl+r ctrl+s", "command": "/security-review", "description": "Run security review on current branch" },
+    { "key": "ctrl+r ctrl+r", "command": "/review", "description": "Review a pull request" },
+    { "key": "ctrl+r ctrl+l", "command": "/loop 30m /security-review", "description": "Loop security review every 30 min" }
+  ]
+}
