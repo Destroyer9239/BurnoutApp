@@ -19,12 +19,21 @@ const PROTECTED_PREFIXES = [
 const AUTH_PAGES = ["/login", "/signup"];
 
 export async function middleware(req: NextRequest) {
-  let res = NextResponse.next({ request: { headers: req.headers } });
+  const res = NextResponse.next({ request: { headers: req.headers } });
+  const path = req.nextUrl.pathname;
+  const needsAuth = PROTECTED_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
+  const isAuthPage = AUTH_PAGES.some((p) => path === p);
 
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // If Supabase isn't configured, let the request through so the landing /
+  // setup pages can still render — protected routes fall through to the
+  // server components, which will surface the missing-env error there.
+  if (!url || !anon) return res;
+
+  try {
+    const supabase = createServerClient<Database>(url, anon, {
       cookies: {
         get(name: string) {
           return req.cookies.get(name)?.value;
@@ -36,29 +45,27 @@ export async function middleware(req: NextRequest) {
           res.cookies.set({ name, value: "", ...options });
         },
       },
-    },
-  );
+    });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  const path = req.nextUrl.pathname;
-  const needsAuth = PROTECTED_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
-  const isAuthPage = AUTH_PAGES.some((p) => path === p);
+    if (needsAuth && !user) {
+      const redirect = req.nextUrl.clone();
+      redirect.pathname = "/login";
+      redirect.searchParams.set("next", path);
+      return NextResponse.redirect(redirect);
+    }
 
-  if (needsAuth && !user) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", path);
-    return NextResponse.redirect(url);
-  }
-
-  if (isAuthPage && user) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/dashboard";
-    url.search = "";
-    return NextResponse.redirect(url);
+    if (isAuthPage && user) {
+      const redirect = req.nextUrl.clone();
+      redirect.pathname = "/dashboard";
+      redirect.search = "";
+      return NextResponse.redirect(redirect);
+    }
+  } catch {
+    // Never let middleware crash the request — fall through.
   }
 
   return res;
