@@ -47,8 +47,8 @@ Other scripts:
 See `.env.example`. The minimum to run locally:
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_URL=https://jcvcmgfgolfsomqozyb.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_0TRu7gV07LL3jNXXeFKdYg_HQhp1d6n
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
